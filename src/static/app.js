@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Create participants list
         const participantsList = details.participants.length > 0 
-          ? `<ul>${details.participants.map(participant => `<li>${participant}</li>`).join('')}</ul>` 
+          ? `<ul class="participants-list">${details.participants.map(participant => `<li><span>${participant}</span><button class="delete-btn" data-activity="${name}" data-email="${participant}" aria-label="Remove participant">✕</button></li>`).join('')}</ul>` 
           : `<p>No participants signed up yet.</p>`;
 
         activityCard.innerHTML = `
@@ -35,6 +35,34 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // Add delete button event listeners
+        const deleteButtons = activityCard.querySelectorAll('.delete-btn');
+        deleteButtons.forEach(button => {
+          button.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const activityName = button.getAttribute('data-activity');
+            const email = button.getAttribute('data-email');
+            
+            if (confirm(`Remove ${email} from ${activityName}?`)) {
+              try {
+                const response = await fetch(
+                  `/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`,
+                  { method: 'POST' }
+                );
+                
+                if (response.ok) {
+                  fetchActivities();
+                } else {
+                  alert('Failed to remove participant');
+                }
+              } catch (error) {
+                console.error('Error removing participant:', error);
+                alert('Failed to remove participant');
+              }
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
@@ -69,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
